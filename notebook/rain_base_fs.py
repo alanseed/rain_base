@@ -20,9 +20,13 @@ def get_field_stats(buf):
 
 def write_to_rain_basefs(rf3_name): 
     # read the ncfile into memory 
-    nc_file = open(rf3_name,"rb")
-    buf = nc_file.read() 
-    nc_file.close()
+    try:
+        nc_file = open(rf3_name,"rb")
+        buf = nc_file.read() 
+        nc_file.close()
+    except FileNotFoundError : 
+        print(f"Error: {rf3_name} not found")
+        return 0
 
     # get the metadata
     fname = os.path.basename(rf3_name)
