@@ -34,5 +34,5 @@ def write_to_rain_basefs(rf3_name):
     fs = gridfs.GridFSBucket(rain_base) 
     file_id = fs.upload_from_stream(fname,buf,metadata={"mean":mean,"stdev":std,"WAR":war})
     client.close()
-    return 
+    return file_id
 
