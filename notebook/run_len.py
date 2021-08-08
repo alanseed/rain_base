@@ -1,7 +1,7 @@
 # Runlength encode an array 
 import numpy as np  
 
-def encode(rain_rate, min_rain_threshold):
+def encode(rain_rate):
     # encode the input array val,nval,x[n],x[n+1],...,val,nval,x[n],x[n+1],, 
     # val in [0, missing_value] - missing value is assumed to be < 0
     # nval is the length of the set of encoded values 
@@ -10,14 +10,12 @@ def encode(rain_rate, min_rain_threshold):
     # an appropriate value would be 5 or 10  
     # TO DO need to work out if we get nans in the array 
 
+    in_shape = rain_rate.shape
     in_array = rain_rate.flatten()
-    
-    # set the low values to zero 
-    low_value_flag = np.where(in_array > 0 and in_array < min_rain_threshold)
-    in_array[low_value_flag] = 0
 
-    # set up the output array
-    out_array = np.array(dtype=np.int16)
+    out_size = in_shape[0]*in_shape[1] 
+    out_array = np.zeros(out_size,dtype=np.int16)
+    out_offset = 0 
     
     #initialise the run length variables 
     run_length = 0
@@ -31,13 +29,17 @@ def encode(rain_rate, min_rain_threshold):
         if ( val > 0 ):
             # check if we have ended a run of invalid data 
             if run_length > 0:
-                out_array.append(run_val)
-                out_array.append(run_length)
+                out_array[out_offset] = np.int16(run_val)
+                out_array[out_offset+1] = np.int16(run_length)
+                out_array[out_offset+2] = val
+                out_offset += 3
                 run_length = 0
                 run_val = 1
+                
             # write out the valid data
             else: 
-                out_array.append(val)
+                out_array[out_offset] = np.int16(val)
+                out_offset += 1
 
         # found invalid data 
         else: 
@@ -48,20 +50,21 @@ def encode(rain_rate, min_rain_threshold):
             else:
                 # write out the existing run 
                 if run_length > 0:
-                    out_array.append(run_val)
-                    out_array.append(run_length)
+                    out_array[out_offset] = np.int16(run_val)
+                    out_array[out_offset+1] = np.int16(run_length)
+                    out_offset += 2
                 # start a new run 
                 run_length = 1
                 run_val = val
-    
+    out_array = np.resize(out_array,out_offset)
     return out_array 
 
 # function to decode the array, returns a 1-D array 
 def decode(in_array, out_shape):
     # set up the output array
-    
-    out_array = np.array(dtype=np.int16)
-    
+    out_size = out_shape[0]*out_shape[1]
+    out_array = np.zeros(out_size,dtype=np.int64)
+
     # loop over the input array 
     ia = 0 
     while ia < len(in_array):
@@ -76,9 +79,17 @@ def decode(in_array, out_shape):
             ia += 1
 
 
-
-
-
+    out_array = np.reshape(out_array, out_shape)
     return out_array 
+
+in_shape = (10,10)
+in_array = np.zeros(in_shape,dtype=np.int64)
+for irow in range(in_shape[0]):
+    for icol in range(4,9):
+        in_array[irow][icol] = icol 
+
+out_array = encode(in_array)
+print(out_array.size)
+print(out_array)
 
 
