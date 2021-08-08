@@ -97,31 +97,28 @@ def decode(in_array, out_shape):
     out_array = np.reshape(out_array, out_shape)
     return out_array 
 
-# single rain domain and no missging data 
-def test_1():
-    in_shape = (10,10)
-    in_array = np.zeros(in_shape,dtype=np.int64)
-    for irow in range(in_shape[0]):
-        for icol in range(4,9):
-            in_array[irow][icol] = icol 
-    return in_array
+# # single rain domain with missing and zero data 
+# def test():
+#     in_shape = (10,10)
+#     in_array = np.zeros(in_shape,dtype=np.int64)
+#     for irow in range(in_shape[0]):
+#         for icol in range(5,in_shape[1]):
+#             in_array[irow][icol] = icol 
 
-# single rain domain with missing and zero data 
-def test_1():
-    in_shape = (10,10)
-    in_array = np.zeros(in_shape,dtype=np.int64)
-    for irow in range(in_shape[0]):
-        for icol in range(4,9):
-            in_array[irow][icol] = icol 
-    return in_array
+#     for irow in range(in_shape[0]):
+#         for icol in range(2,4):
+#             in_array[irow][icol] = -1
 
+#     return in_array
 
+# in_array = test()
+# print("input test array")
+# print(in_array)
 
-in_array = test_1()
-out_array = encode(in_array) 
-print(out_array.size)
-print(out_array)
-test_array = decode(out_array, in_array.shape)
-print(test_array-in_array)
+# out_array = encode(in_array) 
+# print("output encoded array")
+# print(out_array)
 
-
+# test_array = decode(out_array, in_array.shape)
+# print ("test array - encoded then decoded test array")
+# print(test_array-in_array)
