@@ -13,7 +13,7 @@ def encode(rain_rate):
     in_shape = rain_rate.shape
     in_array = rain_rate.flatten()
 
-    out_size = in_shape[0]*in_shape[1] 
+    out_size = int(1.5*in_shape[0]*in_shape[1]) 
     out_array = np.zeros(out_size,dtype=np.int16)
     out_offset = 0 
     
@@ -24,6 +24,10 @@ def encode(rain_rate):
     #start the loop over the input array 
     for ia in range (len(in_array)):
         val = in_array[ia]
+        
+        # make sure that we fit inside the allocated memory 
+        if out_offset > out_size - 3:
+            raise ValueError(f"Error encode: Output encoded array exceeds the allocated size of {out_size} integers")
 
         # found valid data 
         if ( val > 0 ):
@@ -56,40 +60,68 @@ def encode(rain_rate):
                 # start a new run 
                 run_length = 1
                 run_val = val
+    
+    # take care of the last run in the image 
+    if ( run_length > 0):
+        out_array[out_offset] = np.int16(run_val)
+        out_array[out_offset+1] = np.int16(run_length)
+        out_offset += 2
+             
     out_array = np.resize(out_array,out_offset)
     return out_array 
 
-# function to decode the array, returns a 1-D array 
+# function to decode the array 
 def decode(in_array, out_shape):
     # set up the output array
     out_size = out_shape[0]*out_shape[1]
     out_array = np.zeros(out_size,dtype=np.int64)
 
     # loop over the input array 
-    ia = 0 
-    while ia < len(in_array):
-        val = in_array[ia]
+    in_offset = 0
+    out_offset = 0 
+    while in_offset < len(in_array):
+        val = in_array[in_offset]
 
         if val <= 0:
-            for ib in range(in_array[ia+1]):
-                out_array.append(val)
-            ia += 2
-        else:
-            out_array.append(val)
-            ia += 1
+            run_length = in_array[in_offset+1]
+            for ib in range(run_length):
+                out_array[out_offset+ib] = val
+            in_offset += 2
+            out_offset += run_length
 
+        else:
+            out_array[out_offset] = val
+            in_offset += 1
+            out_offset += 1
 
     out_array = np.reshape(out_array, out_shape)
     return out_array 
 
-in_shape = (10,10)
-in_array = np.zeros(in_shape,dtype=np.int64)
-for irow in range(in_shape[0]):
-    for icol in range(4,9):
-        in_array[irow][icol] = icol 
+# single rain domain and no missging data 
+def test_1():
+    in_shape = (10,10)
+    in_array = np.zeros(in_shape,dtype=np.int64)
+    for irow in range(in_shape[0]):
+        for icol in range(4,9):
+            in_array[irow][icol] = icol 
+    return in_array
 
-out_array = encode(in_array)
+# single rain domain with missing and zero data 
+def test_1():
+    in_shape = (10,10)
+    in_array = np.zeros(in_shape,dtype=np.int64)
+    for irow in range(in_shape[0]):
+        for icol in range(4,9):
+            in_array[irow][icol] = icol 
+    return in_array
+
+
+
+in_array = test_1()
+out_array = encode(in_array) 
 print(out_array.size)
 print(out_array)
+test_array = decode(out_array, in_array.shape)
+print(test_array-in_array)
 
 
