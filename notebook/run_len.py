@@ -1,5 +1,6 @@
 # Runlength encode an array 
 import numpy as np  
+from scipy import nan 
 
 def encode(rain_rate):
     # encode the input array val,nval,x[n],x[n+1],...,val,nval,x[n],x[n+1],, 
@@ -8,8 +9,7 @@ def encode(rain_rate):
     # x[n] is the start of a sequence of valid data 
     # Note - the data are scaled (x/0.05) integer values so the minimum value for min_rain_threshold is 1
     # an appropriate value would be 5 or 10  
-    # TO DO need to work out if we get nans in the array 
-
+    
     in_shape = rain_rate.shape
     in_array = rain_rate.flatten()
 
@@ -100,14 +100,14 @@ def decode(in_array, out_shape):
 # # single rain domain with missing and zero data 
 # def test():
 #     in_shape = (10,10)
-#     in_array = np.zeros(in_shape,dtype=np.int64)
+#     in_array = np.zeros(in_shape,dtype=np.float64)
 #     for irow in range(in_shape[0]):
 #         for icol in range(5,in_shape[1]):
 #             in_array[irow][icol] = icol 
 
 #     for irow in range(in_shape[0]):
 #         for icol in range(2,4):
-#             in_array[irow][icol] = -1
+#             in_array[irow][icol] = nan
 
 #     return in_array
 
