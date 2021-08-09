@@ -98,15 +98,14 @@ def decode(in_array, out_shape):
     out_array = np.reshape(out_array, out_shape)
     return out_array 
 
-rf3_name = "/home/awseed/data/RF3/2/20190322/2_20190322_235500.prcp-c5.nc"
-rf3 = Dataset(rf3_name)
-rain = rf3["precipitation"][:] / 0.05
-rle_rain = encode(rain)  
+# rf3_name = "/home/awseed/data/RF3/2/20190322/2_20190322_235500.prcp-c5.nc"
+# rf3 = Dataset(rf3_name)
+# rain = rf3["precipitation"][:] / 0.05
+# rle_rain = encode(rain)  
 
-test = decode(rle_rain,rain.shape)
-diff = rain - test 
-print(np.sum(diff))
-
+# test = decode(rle_rain,rain.shape)
+# diff = rain - test 
+# print(np.sum(diff))
 
 
 # # single rain domain with missing and zero data 
