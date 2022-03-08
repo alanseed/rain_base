@@ -1,9 +1,6 @@
-
-import gridfs
-from pymongo import MongoClient
 # Function to read the rainfields gauge data and write it to the database 
+from pymongo import MongoClient
 import netCDF4 as nc
-import os
 
 # Write the data to the MongoDB
 # returns None on error 
