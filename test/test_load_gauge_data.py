@@ -1,4 +1,4 @@
-""" Test reading a set of rainfields3 gauge obs files into the database
+""" Test the load_gauge_data function  
 
     Returns:
         _type_: _description_
