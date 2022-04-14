@@ -5,14 +5,18 @@
 """
 from pymongo import MongoClient
 from netCDF4 import Dataset
-from geojson import Point
+
 
 def load_gauge_data(**kwargs):
-    """Read a rainfields3 rain gauge netcdf file and write the data to the database 
-
+    """Reads a rainfields3 rain gauge netcdf file and writes the data to a "gauge_data" collection
+    in a MongoDB database
+    kwargs:
+        file_path: path to the rf3 gaugeobs file to be read
+        db_client: MongoDB client for the output database
+        db_name: Name of the MongoDB collection for the output database
     Returns:
-        None: on error 
-        0: on success 
+        None: on error
+        0: on success
     """
     rf3_name = kwargs.get("file_path", None)
     gauge_db_client = kwargs.get("db_client", None)
@@ -45,27 +49,33 @@ def load_gauge_data(**kwargs):
 
     # loop over the stations and load up the gauge_list
     gauge_list = []
-    for ia in range(1, number_stations):
-        lat = latitude[ia].item()
-        lon = longitude[ia].item()
-        loc = Point([lon, lat])
-        record = {
-            'start_time': rf3_start_time,
-            'valid_time': rf3_valid_time,
-            'station_id': station_id[ia].item(),
-            'precipitation': precipitation[ia].item(),
-            'latest_obs_time': latest_obs_time[ia].item(),
-            'location': loc
+    for station in range(1, number_stations):
+        geojson_record = {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [longitude[station].item(), latitude[station].item()],
+            },
+            'properties': {
+                'start_time': rf3_start_time,
+                'valid_time': rf3_valid_time,
+                'station_id': station_id[station].item(),
+                'precipitation': precipitation[station].item(),
+                'latest_obs_time': latest_obs_time[station].item(),
+            }
         }
-        gauge_list.append(record)
+        gauge_list.append(geojson_record)
 
-    # write to the database
+    # open the connection to the database if required
     if gauge_db_name is not None:
         myclient = MongoClient()
         gauge_db_client = myclient[gauge_db_name]
     gauge_collection = gauge_db_client["gauge_data"]
+
+    # write all the data
     gauge_collection.insert_many(gauge_list)
 
+    # close the connection if required
     if gauge_db_name is not None:
         myclient.close()
 
