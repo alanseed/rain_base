@@ -6,6 +6,9 @@
 from pymongo import MongoClient
 from netCDF4 import Dataset
 
+from geojson_pydantic import Feature, Point
+from pydantic import BaseModel
+from typing import Dict
 
 def load_gauge_data(**kwargs):
     """Reads a rainfields3 rain gauge netcdf file and writes the data to a "gauge_data" collection
@@ -81,3 +84,34 @@ def load_gauge_data(**kwargs):
 
     print(f"written {rf3_name}")
     return 0
+
+
+def get_gauge_data(**kwargs):
+    """Read gauge data from the MongoDB collection 
+    kwargs:
+        db_client: MongoDB client for the output database
+        db_name: Name of the MongoDB collection for the output database
+        station_id: station id for the gauge
+
+    Returns:
+        list: list of GaugeDataModels with the gauge data
+    """
+    # Parse the key words
+    gauge_db_client = kwargs.get("db_client", None)
+    gauge_db_name = kwargs.get("db_name", None)
+    if gauge_db_client is None and gauge_db_name is None:
+        print("Need one of db_name or db_client")
+        return None
+    station_id = kwargs.get("station_id", None)
+
+    # open the connection to the database if required
+    if gauge_db_name is not None:
+        myclient = MongoClient()
+        gauge_db_client = myclient[gauge_db_name]
+    gauges = gauge_db_client["gauge_data"]
+
+    data = []
+    for gauge in gauges.find({"properties.station_id":station_id}):
+        data.append(gauge)  
+
+    return data
