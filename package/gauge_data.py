@@ -5,10 +5,8 @@
 """
 from pymongo import MongoClient
 from netCDF4 import Dataset
+from datetime import datetime
 
-from geojson_pydantic import Feature, Point
-from pydantic import BaseModel
-from typing import Dict
 
 def load_gauge_data(**kwargs):
     """Reads a rainfields3 rain gauge netcdf file and writes the data to a "gauge_data" collection
@@ -92,26 +90,39 @@ def get_gauge_data(**kwargs):
         db_client: MongoDB client for the output database
         db_name: Name of the MongoDB collection for the output database
         station_id: station id for the gauge
+        dates:{'start_time':start time as datetime, 'end_time':end time as datetime}
 
     Returns:
-        list: list of GaugeDataModels with the gauge data
+        MongoDB cursor object sorted on valid_time
     """
-    # Parse the key words
+    # build the query
+    query = {}
+    station_id = kwargs.get("station_id", None)
+    dates = kwargs.get("dates", None)
+
+    if station_id is not None:
+        query['properties.station_id'] = station_id
+
+    if dates is not None:
+        query['properties.valid_time'] = {'$gte': int(datetime.timestamp(
+            dates['start_time'])), '$lte': int(datetime.timestamp(dates['end_time']))}
+
+    # Parse the database details
     gauge_db_client = kwargs.get("db_client", None)
     gauge_db_name = kwargs.get("db_name", None)
     if gauge_db_client is None and gauge_db_name is None:
         print("Need one of db_name or db_client")
         return None
-    station_id = kwargs.get("station_id", None)
 
-    # open the connection to the database if required
-    if gauge_db_name is not None:
+    # make the query
+    if gauge_db_client is not None:
+        cursor = gauge_db_client["gauge_data"].find(
+            query).sort('properties.valid_time')
+    else:
         myclient = MongoClient()
         gauge_db_client = myclient[gauge_db_name]
-    gauges = gauge_db_client["gauge_data"]
+        cursor = gauge_db_client["gauge_data"].find(
+            query).sort('properties.valid_time')
+        gauge_db_client.close(gauge_db_client["gauge_data"])
 
-    data = []
-    for gauge in gauges.find({"properties.station_id":station_id}):
-        data.append(gauge)  
-
-    return data
+    return cursor
