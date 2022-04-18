@@ -5,8 +5,7 @@
 """
 
 import os
-import datetime
-from unittest import result
+from datetime import datetime, timedelta
 from pymongo import MongoClient 
 
 def get_gauge_data(**kwargs):
@@ -15,9 +14,11 @@ def get_gauge_data(**kwargs):
         db_client: MongoDB client for the output database
         db_name: Name of the MongoDB collection for the output database
         station_id: station id for the gauge
+        start_time: minimum time for the data
+        end_time: maximum time for the data, need both start_time and end_time arguments for a search on time
 
     Returns:
-        list: list of GaugeDataModels with the gauge data
+        MongoDB cursor object sorted on valid_time
     """
     # Parse the key words
     gauge_db_client = kwargs.get("db_client", None)
@@ -26,6 +27,8 @@ def get_gauge_data(**kwargs):
         print("Need one of db_name or db_client")
         return None
     station_id = kwargs.get("station_id", None)
+    start_time = kwargs.get("start_time", None)
+    end_time = kwargs.get("end_time", None)
 
     # open the connection to the database if required
     if gauge_db_name is not None:
@@ -33,21 +36,25 @@ def get_gauge_data(**kwargs):
         gauge_db_client = myclient[gauge_db_name]
     gauges = gauge_db_client["gauge_data"]
 
-    result = []
-    for gauge in gauges.find({"properties.station_id":station_id}):
-        result.append(gauge)  
+    query = {}
+    if station_id is not None:
+        query['properties.station_id']=station_id
+    if (start_time is not None) and (end_time is not None):
+        query['properties.valid_time'] = {'$gte':int(datetime.timestamp(start_time)),'$lte':int(datetime.timestamp(end_time))} 
+    cursor = gauges.find(query).sort('properties.valid_time')
+    return cursor
 
-    return result
-
-START_DATE = datetime.datetime(2021, 12, 7, 21, 0)
-END_DATE = datetime.datetime(2021, 12, 7, 23, 45)
-TIME_STEP = datetime.timedelta(minutes=15)
+START_DATE = datetime(2021, 12, 8, 8, 0)
+END_DATE = datetime(2021, 12, 8, 23, 45)
+TIME_STEP = timedelta(minutes=15)
 DB_NAME = 'gaugeobs'
-STATION_ID = 1007
+STATION_ID = 597506
 
 # drop the existing data base for the test
 client = MongoClient()
 db_client = client[DB_NAME]
-data = get_gauge_data(db_client = db_client,station_id=1007)
+results = get_gauge_data(db_client = db_client,station_id=STATION_ID, start_time = START_DATE, end_time = END_DATE)
 client.close()
-print(data)
+
+for record in results:
+    print(record)
