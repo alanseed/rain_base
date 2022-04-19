@@ -1,12 +1,11 @@
-"""Module to read and write gauge data to the database 
+"""Module to read and write gauge data to the database next version
 
     Returns:
         _type_: _description_
 """
+from datetime import datetime
 from pymongo import MongoClient
 from netCDF4 import Dataset
-from datetime import datetime
-
 
 def load_gauge_data(**kwargs):
     """Reads a rainfields3 rain gauge netcdf file and writes the data to a "gauge_data" collection
@@ -85,44 +84,50 @@ def load_gauge_data(**kwargs):
 
 
 def get_gauge_data(**kwargs):
-    """Read gauge data from the MongoDB collection 
+    """Read gauge data from the MongoDB collection
     kwargs:
-        db_client: MongoDB client for the output database
-        db_name: Name of the MongoDB collection for the output database
-        station_id: station id for the gauge
-        dates:{'start_time':start time as datetime, 'end_time':end time as datetime}
+        db_client: MongoDB client for the rain gauge database
+
+        location: for a search on a station id {'station_id': ID of the station}, OR
+                  for a search on a location {'geometry': geoJSON Point location object,
+                                              'maxDistance': maximum distance in m for the search }
+        dates:{'start_time':UTC start time as datetime,
+               'end_time':UTC end time as datetime}
 
     Returns:
-        MongoDB cursor object sorted on valid_time
+        MongoDB cursor object sorted on valid_time and station_id
     """
-    # build the query
-    query = {}
-    station_id = kwargs.get("station_id", None)
+
+    # check that we have all the key words
     dates = kwargs.get("dates", None)
-
-    if station_id is not None:
-        query['properties.station_id'] = station_id
-
-    if dates is not None:
-        query['properties.valid_time'] = {'$gte': int(datetime.timestamp(
-            dates['start_time'])), '$lte': int(datetime.timestamp(dates['end_time']))}
-
-    # Parse the database details
-    gauge_db_client = kwargs.get("db_client", None)
-    gauge_db_name = kwargs.get("db_name", None)
-    if gauge_db_client is None and gauge_db_name is None:
-        print("Need one of db_name or db_client")
+    if dates is None:
+        print("dates keyword not found")
         return None
 
-    # make the query
-    if gauge_db_client is not None:
-        cursor = gauge_db_client["gauge_data"].find(
-            query).sort('properties.valid_time')
+    search_location = kwargs.get("location", None)
+    if search_location is None:
+        print("location key word not found")
+        return None
+
+    gauge_db_client = kwargs.get("db", None)
+    if gauge_db_client is None:
+        print("db keyword not found")
+        return None
+
+    query = {}
+    query['properties.valid_time'] = {'$gte': int(datetime.timestamp(
+        dates['start'])), '$lte': int(datetime.timestamp(dates['end']))}
+
+    if 'station_id' in search_location.keys():
+        query['properties.station_id'] = search_location['station_id']
     else:
-        myclient = MongoClient()
-        gauge_db_client = myclient[gauge_db_name]
-        cursor = gauge_db_client["gauge_data"].find(
-            query).sort('properties.valid_time')
-        gauge_db_client.close(gauge_db_client["gauge_data"])
+        query['geometry'] = {
+            '$nearSphere': {
+                '$geometry': search_location['geometry'],
+                '$maxDistance': search_location['maxDistance']}
+        }
+
+    cursor = gauge_db_client["gauge_data"].find(
+        query).sort([("properties.valid_time",1), ("properties.station_id",1)])
 
     return cursor
