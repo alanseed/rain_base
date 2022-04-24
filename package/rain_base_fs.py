@@ -12,22 +12,22 @@ from netCDF4 import Dataset
 
 
 def get_metadata(buf):
-    """_summary_
+    """_summary_extract metadata from the nc file
 
     Args:
-        buf (_type_): buffer with the netCDF file 
+        buf (_type_): buffer with the netCDF file
 
     Returns:
         Dictionary: {
             "variable": Name of the variable,
-            "station_id": Rainfields station id, 
+            "station_id": Rainfields station id,
             "station_name": Rainfields station name,
-            "valid_time": Valid time for the field, 
-            "start_time": Start time for the field, 
-            "mean": mean, 
+            "valid_time": Valid time for the field,
+            "start_time": Start time for the field,
+            "mean": mean,
             "std": standard deviation,
-            "war": wetted area ratio 
-            } 
+            "war": wetted area ratio
+            }
     """
     ncFile = Dataset("fname", mode="r", memory=buf)
 
@@ -40,7 +40,7 @@ def get_metadata(buf):
 
     if 'start_time' in var_list:
         my_metadata['start_time'] = int(ncFile['start_time'][0].item())
-    
+
     # get the type of rainfall variable
     my_variable = None
     if 'precipitation' in var_list:
@@ -55,7 +55,7 @@ def get_metadata(buf):
         print(f"{var_list=}")
         return None
 
-    #read in the data
+    # read in the data
     scaled_rain = ncFile[my_variable][:]
     scale_factor = ncFile.variables[my_variable].scale_factor
     rain = scaled_rain * scale_factor
@@ -67,6 +67,7 @@ def get_metadata(buf):
     my_metadata["war"] = 100 * rain_area / valid_area
 
     return my_metadata
+
 
 def write_to_rain_basefs(**kwargs):
     """Write a rainfields3 netcdf file of rainfall to the mongodb
