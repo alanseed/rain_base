@@ -1,0 +1,10 @@
+{ 
+    "START_DATE" : "2021-01-28T00:00:00",
+    "END_DATE" : "2021-01-29T00:00:00",
+    "TIME_STEP": "5", 
+    "BASE_DIR": "/home/awseed/data/RF3/prcp-crate",
+    "PRODUCT": "prcp-crate.nc",
+    "STN_ID": "310",
+    "DB_NAME": "radar",
+    "DROP_DATABASE":"1"
+}
