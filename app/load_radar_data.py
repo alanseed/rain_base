@@ -75,8 +75,8 @@ def main():
             [('filename', ASCENDING)], name='FilenameIndex')
 
     # loop over the dates and read in the data
-    valid_time = datetime.datetime.fromisoformat(config["START_DATE"])
-    end_time = datetime.datetime.fromisoformat(config["END_DATE"])
+    valid_time = datetime.datetime.fromisoformat(config["START_DATE"]).replace(tzinfo=datetime.timezone.utc)
+    end_time = datetime.datetime.fromisoformat(config["END_DATE"]).replace(tzinfo=datetime.timezone.utc)
     time_step = datetime.timedelta(minutes=int(config["TIME_STEP"]))
 
     # make the base directory for the input files
