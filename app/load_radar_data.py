@@ -66,27 +66,31 @@ def main():
         dbnames = client.list_database_names()
         if config["DB_NAME"] in dbnames:
             client.drop_database(config["DB_NAME"])
-    db_client = client[config["DB_NAME"]]  
+    db_client = client[config["DB_NAME"]]
 
     if config["DROP_DATABASE"] == "1":
         resp = db_client.fs.files.create_index(
-            [('metadata.station_id', ASCENDING),('metadata.variable', ASCENDING),('metadata.valid_time', ASCENDING)], name='ValidTimeIndex')
+            [('metadata.station_id', ASCENDING), ('metadata.product', ASCENDING), ('metadata.valid_time', ASCENDING)], name='ValidTimeIndex')
         resp = db_client.fs.files.create_index(
-                [('filename', ASCENDING)], name='FilenameIndex')
+            [('filename', ASCENDING)], name='FilenameIndex')
 
     # loop over the dates and read in the data
     valid_time = datetime.datetime.fromisoformat(config["START_DATE"])
     end_time = datetime.datetime.fromisoformat(config["END_DATE"])
     time_step = datetime.timedelta(minutes=int(config["TIME_STEP"]))
+
+    # make the base directory for the input files
+    base_dir = os.path.join(
+        config["BASE_DIR"], config["PRODUCT"], config["STN_ID"])
+
     while valid_time <= end_time:
-        y = valid_time.strftime("%Y")
         ymd = valid_time.strftime("%Y%m%d")
         hms = valid_time.strftime("%H%M%S")
         file_path = os.path.join(
-            config["BASE_DIR"], valid_time.strftime("%Y/%Y%m%d/"))
-        file_name = f"{config['STN_ID']}_{ymd}_{hms}.{config['PRODUCT']}"
+            base_dir, valid_time.strftime("%Y"), valid_time.strftime("%m"), valid_time.strftime("%d"))
+        file_name = f"{config['STN_ID']}_{ymd}_{hms}.{config['PRODUCT']}.nc"
         file_path = os.path.join(file_path, file_name)
-    
+
         file_id = rain_base_fs.write_to_rain_basefs(
             file_path=file_path, db_client=db_client)
         if file_id is None:

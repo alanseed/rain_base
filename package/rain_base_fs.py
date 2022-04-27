@@ -101,6 +101,10 @@ def write_to_rain_basefs(**kwargs):
     fname = os.path.basename(rf3_name)
     my_metadata = get_metadata(buf)
 
+    # get the product from the file name and add it to the metadata 
+    fname_list = fname.split(".")
+    my_metadata["product"] = fname_list[-2]
+    
     fs = gridfs.GridFSBucket(db_client)
     file_id = fs.upload_from_stream(fname, buf, metadata=my_metadata)
 
