@@ -66,7 +66,14 @@ def main():
         dbnames = client.list_database_names()
         if config["DB_NAME"] in dbnames:
             client.drop_database(config["DB_NAME"])
-    db_client = client[config["DB_NAME"]]
+    db_client = client[config["DB_NAME"]] 
+
+# make the indexes if the database has been dropped
+    if config["DROP_DATABASE"] == "1":
+        resp = db_client["gauge_data"].create_index(
+            [('properties.valid_time', ASCENDING)], name='ValidTimeIndex')
+        resp = db_client["gauge_data"].create_index(
+            [('geometry', '2dsphere')], name='LocationIndex')
 
     # loop over the dates and read in the data
     valid_time = datetime.datetime.fromisoformat(config["START_DATE"])
@@ -88,12 +95,6 @@ def main():
 
         valid_time = valid_time + time_step
 
-# make the indexes if the database has been dropped
-    if config["DROP_DATABASE"] == "1":
-        resp = db_client["gauge_data"].create_index(
-            [('properties.valid_time', ASCENDING)], name='ValidTimeIndex')
-        resp = db_client["gauge_data"].create_index(
-            [('geometry', '2dsphere')], name='LocationIndex')
 
     client.close()
 
