@@ -1,0 +1,11 @@
+{ 
+    "START_DATE" : "2022-01-01T00:00:00",
+    "END_DATE" : "2022-03-09T23:55:00",
+    "IN_TIME_STEP": "5", 
+    "OUT_TIME_STEP":"15",
+    "BASE_DIR": "/home/awseed/data/RF3",
+    "IN_PRODUCT": "prcp-c5",
+    "OUT_PRODUCT": "prcp-c15",
+    "STN_ID": "71",
+    "DB_NAME": "radar"
+}
