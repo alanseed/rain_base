@@ -17,7 +17,15 @@ Tests reading a time series of data from rain gauge
 ## Applications  
 The applications are found in the `app` directory  
 
-### **Loading gauge data into data base**  
+### **Loading data into data base**  
 
 `load_gauge_data.py`  Application reads Rainfields3 gaugeobs netcdf files and loads the data into a database  
-`test.json`  An example of the input configuration file for load_gauge_data.py 
+`test.json`  An example of the input configuration file for `load_gauge_data.py`  
+`load_radar_data.py`  Loads Rainfields3 radar data into the database.  
+`test_radar_data.json`  An example of the input configuration file for `load_radar_data.py`  
+
+### **Utilities**  
+
+`accumulate_data.py`  Accumulates rainfall accumulation (variable = *precipitation*) data and writes the accumulation back into the database  
+`test_accumulate_data.json` An example of the input configuration file for `accumulate_data.py`  
+
