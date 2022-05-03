@@ -30,10 +30,9 @@ def get_metadata(buf):
             }
     """
     ncFile = Dataset("fname", mode="r", memory=buf)
-
     var_list = ncFile.variables.keys()
-    my_metadata = {}
 
+    my_metadata = {}
     my_metadata["station_id"] = int(ncFile.__getattr__("station_id"))
     my_metadata["station_name"] = str(ncFile.__getattr__("station_name"))
     my_metadata['valid_time'] = int(ncFile['valid_time'][0].item())
@@ -55,14 +54,11 @@ def get_metadata(buf):
         print(f"{var_list=}")
         return None
 
-    # read in the data
-    scaled_rain = ncFile[my_variable][:]
-    scale_factor = ncFile.variables[my_variable].scale_factor
-    rain = scaled_rain * scale_factor
-
+    # calculate the stats for this field
+    rain = ncFile[my_variable][:]
     my_metadata["mean"] = rain.mean()
     my_metadata["std"] = rain.std()
-    rain_area = (rain > 0.1).sum()
+    rain_area = (rain > 0).sum()
     valid_area = rain.count()
     my_metadata["war"] = 100 * rain_area / valid_area
 
@@ -108,5 +104,4 @@ def write_to_rain_basefs(**kwargs):
     fs = gridfs.GridFSBucket(db_client)
     file_id = fs.upload_from_stream(fname, buf, metadata=my_metadata)
 
-    print(f"written {rf3_name}")
     return file_id
