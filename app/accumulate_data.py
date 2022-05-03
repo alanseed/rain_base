@@ -11,6 +11,7 @@ from netCDF4 import Dataset
 from pymongo import MongoClient, ASCENDING
 import gridfs as fs
 
+
 def usage():
     """_summary_ Generate the usage message
     """
@@ -87,23 +88,29 @@ def main():
         end_accum = start_accum + out_time_step
         in_time = start_accum + in_time_step
         count = int(0)
+        has_data = True
 
-        # set up the name of the output accumulation file and open it
+        # set up the output file for this accumulation
         out_file_name = make_file_name(
             config["STN_ID"], config["OUT_PRODUCT"], end_accum)
-        ds_out = Dataset(out_file_name, mode="w")
+        ds_out = Dataset("./temp_accum_file.nc", mode="w",clobber=True)
 
         # start the loop over the 5 min files in this accumulation period
         while in_time <= end_accum:
 
             # make the name of the input file and get it from the database
             in_file_name = make_file_name(
-                config["STN_ID"], config["IN_PRODUCT"], in_time)
+                config["STN_ID"], config["IN_PRODUCT"], in_time)  
             file = radar_fs.find_one({"filename": in_file_name})
+
+            if file is None:
+                has_data = False
+                print(f"ERROR: {in_file_name} not found")
+                break
+
             data = file.read()
             ds_in = Dataset(in_file_name, mode="r", memory=data)
 
-            # use the first input ncFile as a template for the output ncFile
             if count == 0:
 
                 # get the shape of the data array and create the accumulation array
@@ -111,7 +118,9 @@ def main():
                 number_cols = ds_in.dimensions['x'].size
                 data_shape = (number_rows, number_cols)
                 accum_rain = np.zeros(data_shape, dtype=np.float64)
+                start_accum_time = int(ds_in['start_time'][0].item())
 
+                # use the first input file as a template for the output file
                 # Copy the global attributes
                 ds_out.setncatts(ds_in.__dict__)
 
@@ -125,47 +134,55 @@ def main():
                     out_var = ds_out.createVariable(
                         v_name, in_var.datatype, in_var.dimensions)
                     out_var.setncatts({k: in_var.getncattr(k)
-                                      for k in in_var.ncattrs()})
+                                       for k in in_var.ncattrs()})
                     out_var[:] = in_var[:]
 
+            # accumulate the rainfall
             in_rain = ds_in["precipitation"][:]
             valid_time = ds_in["valid_time"][:]
             accum_rain = np.add(accum_rain, in_rain)
             ds_in.close()
+
             in_time += in_time_step
             count += 1
 
-        # write the accumulation to the output ncFile precipitation variable
-        ds_out["valid_time"][:] = valid_time
-        ds_out["precipitation"][:] = accum_rain
+        # write out the accumulation if all the input fields are found
+        if has_data:
+            ds_out["start_time"][:] = start_accum_time
+            ds_out["valid_time"][:] = valid_time
+            ds_out["precipitation"][:] = accum_rain
 
-        # get the metadata for the output field
-        my_meta_data = {}
-        my_meta_data["station_id"] = int(ds_out.__getattr__("station_id"))
-        my_meta_data["station_name"] = str(ds_out.__getattr__("station_name"))
-        my_meta_data['valid_time'] = int(ds_out['valid_time'][0].item())
-        my_meta_data['start_time'] = int(ds_out['start_time'][0].item())
-        my_meta_data['variable'] = "precipitation"
-        my_meta_data["product"] = config["OUT_PRODUCT"]
+            # get the metadata for the output field
+            my_meta_data = {}
+            my_meta_data["station_id"] = int(ds_out.__getattr__("station_id"))
+            my_meta_data["station_name"] = str(
+                ds_out.__getattr__("station_name"))
+            my_meta_data['valid_time'] = int(ds_out['valid_time'][0].item())
+            my_meta_data['start_time'] = int(ds_out['start_time'][0].item())
+            my_meta_data['variable'] = "precipitation"
+            my_meta_data["product"] = config["OUT_PRODUCT"]
 
-        my_meta_data["mean"] = accum_rain.mean()
-        my_meta_data["std"] = accum_rain.std()
-        rain_area = (accum_rain > 0).sum()
+            my_meta_data["mean"] = accum_rain.mean()
+            my_meta_data["std"] = accum_rain.std()
+            rain_area = (accum_rain >= 0.05).sum()
 
-        # TO DO - allow for missing data in the accum array
-        valid_area = number_cols*number_rows
-        my_meta_data["war"] = 100 * rain_area / valid_area
+            # TO DO - allow for missing data in the accum array
+            valid_area = number_cols*number_rows
+            my_meta_data["war"] = 100 * rain_area / valid_area
 
-        # make a file-like object pointing to the output nc file memory buffer
-        out_buf = io.BytesIO(ds_out.close())
+            # make a file-like object pointing to the output nc file memory buffer
+            out_buf = io.BytesIO(ds_out.close())
 
-        out_fs = fs.GridFSBucket(db)
-        file_id = out_fs.upload_from_stream(
-            out_file_name, out_buf, metadata=my_meta_data)
-        if file_id is not None:
-            print(f"written {out_file_name}")
+            out_fs = fs.GridFSBucket(db)
+            file_id = out_fs.upload_from_stream(
+                out_file_name, out_buf, metadata=my_meta_data)
+            if file_id is not None:
+                print(f"written {out_file_name}")
+        else:
+            ds_out.close()
 
         start_accum += out_time_step
+        accum_rain = None
 
     client.close()
 

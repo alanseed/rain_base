@@ -1,6 +1,6 @@
 { 
-    "START_DATE" : "2022-01-01T00:15:00",
-    "END_DATE" : "2022-03-09T23:45:00",
+    "START_DATE" : "2022-01-02T00:00:00",
+    "END_DATE" : "2022-01-03T00:00:00",
     "IN_TIME_STEP": "5", 
     "OUT_TIME_STEP":"15",
     "BASE_DIR": "/home/awseed/data/RF3",
