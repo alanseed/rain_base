@@ -58,9 +58,9 @@ def get_metadata(buf):
     rain = ncFile[my_variable][:]
     my_metadata["mean"] = rain.mean()
     my_metadata["std"] = rain.std()
-    rain_area = (rain > 0).sum()
+    rain_area = (rain >= 0.05).sum()
     valid_area = rain.count()
-    my_metadata["war"] = 100 * rain_area / valid_area
+    my_metadata["war"] = rain_area / valid_area
 
     return my_metadata
 
