@@ -1,3 +1,7 @@
+# Temporary netcdf files 
+*.nc  
+
+# Visual Studio files 
 .vscode/ 
 
 # Byte-compiled / optimized / DLL files
