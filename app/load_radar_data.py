@@ -95,6 +95,8 @@ def main():
             file_path=file_path, db_client=db_client)
         if file_id is None:
             print(f"Error: {file_path} not found")
+        else:
+            print(f"{file_path=}")
         valid_time = valid_time + time_step
 
     client.close()
