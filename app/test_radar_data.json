@@ -1,6 +1,6 @@
 { 
-    "START_DATE" : "2022-01-01T00:00:00",
-    "END_DATE" : "2022-03-09T23:55:00",
+    "START_DATE" : "2022-01-02T00:00:00",
+    "END_DATE" : "2022-01-03T00:00:00",
     "TIME_STEP": "5", 
     "BASE_DIR": "/home/awseed/data/RF3",
     "PRODUCT": "prcp-c5",
