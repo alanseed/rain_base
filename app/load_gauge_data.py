@@ -7,7 +7,7 @@ import json
 import os
 import datetime
 from pymongo import MongoClient, ASCENDING
-from package import gauge_data
+import gauge_data
 
 
 def usage():
